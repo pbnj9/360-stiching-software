@@ -20,7 +20,7 @@ VIDEO_EXTS = (".mp4",)
 class StitcherApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Gear 360 Stitcher")
+        self.title("Gear 360 Stitcher - v0.3.1")
         self.geometry("1100x720")
         self.minsize(900, 620)
         self.configure(background="#edf1ee")
