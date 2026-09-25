@@ -1,0 +1,45 @@
+GEAR 360 STITCHER v0.2.1 - HOW TO USE
+========================================
+
+WHAT THIS VERSION DOES
+v0.2.1 keeps batch stitching for photos and videos and improves the
+Calibration workspace, making it easier to tune the seam while viewing the
+stitched preview.
+
+OPEN THIS VERSION
+1. Open PowerShell.
+2. Run:
+   cd "C:\Users\jacks\OneDrive\Desktop\360 stiching software\gear360-stitcher\versions\v0.2.1\gear360-stitcher"
+3. Install requirements once:
+   python -m pip install -r requirements.txt
+4. Start the app:
+   python main.py
+
+PHOTO BATCH JOB
+1. Select the Stitch Photos tab.
+2. Use Add photos to add raw dual-fisheye JPG files.
+3. Use Choose folder to set the destination.
+4. Select Start stitching.
+5. Watch the progress bar and status line. Output files end in _360.jpg.
+
+VIDEO BATCH JOB
+1. Select the Stitch Videos tab.
+2. Use Add videos to add raw dual-fisheye MP4 files.
+3. Use Choose folder to set the destination.
+4. Select Start stitching.
+5. Output files end in _360.mp4.
+
+CALIBRATION
+1. Select the Calibration tab.
+2. Load a photo or video. Video preview uses a frame from the middle of the clip.
+3. Adjust Front and Back center X/Y, radius, field of view, and back rotation.
+4. Select Preview after changes and check the equirectangular preview seam.
+5. Select Save profile to make the selected calibration the default for future
+   photo and video jobs.
+6. Select Reset defaults to discard slider changes and return to the standard
+   camera profile.
+
+VIDEO AUDIO
+Install FFmpeg to retain source audio:
+  winget install ffmpeg
+The app will show whether FFmpeg is available on the Stitch Videos tab.

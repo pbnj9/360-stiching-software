@@ -1,0 +1,41 @@
+GEAR 360 STITCHER v0.2.0 - HOW TO USE
+========================================
+
+WHAT THIS VERSION DOES
+This version introduces the Stitch Studio interface. It supports batch photo
+and video jobs and lets you adjust the lens profile with a live preview.
+
+OPEN THIS VERSION
+1. Open PowerShell.
+2. Run:
+   cd "C:\Users\jacks\OneDrive\Desktop\360 stiching software\gear360-stitcher\versions\v0.2.0\gear360-stitcher"
+3. Install requirements once:
+   python -m pip install -r requirements.txt
+4. Start the app:
+   python main.py
+
+STITCH PHOTOS
+1. Open the Stitch Photos tab.
+2. Select Add photos and choose one or more raw Gear 360 JPG files.
+3. Select Choose folder and choose an output location.
+4. Select Start stitching.
+5. Completed files are named <original name>_360.jpg.
+
+STITCH VIDEOS
+1. Open the Stitch Videos tab.
+2. Select Add videos and choose one or more raw Gear 360 MP4 files.
+3. Select Choose folder and choose an output location.
+4. Select Start stitching.
+5. Completed files are named <original name>_360.mp4.
+
+CALIBRATE THE LENSES
+1. Open the Calibration tab.
+2. Select Load sample photo/video and choose a representative source file.
+3. Adjust front/back center, radius, field of view, and back rotation.
+4. Select Preview and inspect the join between the two lens images.
+5. Select Save profile when the seam looks right.
+
+VIDEO AUDIO
+Install FFmpeg and restart the app to preserve source audio:
+  winget install ffmpeg
+Without FFmpeg, stitched videos still work but are silent.

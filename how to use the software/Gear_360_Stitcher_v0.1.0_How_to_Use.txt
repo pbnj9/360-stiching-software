@@ -1,0 +1,35 @@
+GEAR 360 STITCHER v0.1.0 - HOW TO USE
+========================================
+
+WHAT THIS VERSION DOES
+This is the baseline stitcher for Samsung Gear 360 (2017 / SM-R210) files.
+It converts one dual-fisheye photo or video at a time into a 360-degree
+equirectangular file using its built-in stitch profile.
+
+OPEN THIS VERSION
+1. Open PowerShell.
+2. Run:
+   cd "C:\Users\jacks\OneDrive\Desktop\360 stiching software\gear360-stitcher\versions\v0.1.0\gear360-stitcher"
+3. Install requirements once:
+   python -m pip install -r requirements.txt
+4. Start the program:
+   python -m src.gui
+
+STITCH A PHOTO
+1. Choose the raw Gear 360 JPG file.
+2. Choose where to save the completed file.
+3. Start stitching.
+4. Open the exported 2:1 image in a 360 photo viewer.
+
+STITCH A VIDEO
+1. Choose the raw Gear 360 MP4 file.
+2. Choose where to save the completed file.
+3. Start stitching and wait for processing to finish.
+4. Open the exported MP4 in a 360 video viewer.
+
+IMPORTANT NOTES
+- Use original Gear 360 dual-fisheye files. Photos are normally 5792 x 2896;
+  videos are normally 2560 x 1280.
+- This version uses a fixed stitch profile. Use v0.2.0 or newer if you need
+  calibration controls or a cleaner batch workflow.
+- If FFmpeg is not installed, video output may not contain audio.

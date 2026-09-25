@@ -1,0 +1,47 @@
+GEAR 360 STITCHER v0.2.2 - HOW TO USE
+========================================
+
+WHAT THIS VERSION DOES
+v0.2.2 is the current documented release. It includes the clean Stitch Studio
+interface, batch photo/video processing, and the refined calibration workspace.
+
+OPEN THIS VERSION
+1. Open PowerShell.
+2. Run:
+   cd "C:\Users\jacks\OneDrive\Desktop\360 stiching software\gear360-stitcher\versions\v0.2.2\gear360-stitcher"
+3. Install requirements once:
+   python -m pip install -r requirements.txt
+4. Start the app:
+   python main.py
+
+STITCH PHOTOS
+1. Open Stitch Photos.
+2. Select Add photos and choose raw Gear 360 JPG files.
+3. Select Choose folder and choose the output destination.
+4. Select Start stitching.
+5. The app creates <original name>_360.jpg for every successful file.
+
+STITCH VIDEOS
+1. Open Stitch Videos.
+2. Select Add videos and choose raw Gear 360 MP4 files.
+3. Select Choose folder and choose the output destination.
+4. Select Start stitching.
+5. The app creates <original name>_360.mp4 for every successful file.
+
+CALIBRATE FOR THE BEST SEAM
+1. Open Calibration and load a sample photo or video.
+2. Use the lens profile controls to align the front and back image areas.
+3. Select Preview whenever you want to inspect the equirectangular stitch.
+4. Save profile when the seam looks correct. The saved profile is used for
+   later photo and video exports.
+5. Reset defaults returns all controls to the standard SM-R210 starting profile.
+
+VIDEO AUDIO
+FFmpeg is optional but required to preserve audio from the original MP4:
+  winget install ffmpeg
+Restart the app after installation. Without FFmpeg, output video is silent.
+
+CHOOSING A VERSION
+- Use v0.1.0 for the original fixed-profile workflow.
+- Use v0.2.0 for the first clean batch-and-calibration interface.
+- Use v0.2.1 or v0.2.2 for the refined calibration workspace.
