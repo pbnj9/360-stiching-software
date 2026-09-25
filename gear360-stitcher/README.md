@@ -30,7 +30,7 @@ python main.py
 ## Versions
 
 Each working release is kept as both a Git tag and a runnable snapshot under
-`versions/`:
+`versions/<version>/gear360-stitcher/`:
 
 - `versions/v0.1.0` — baseline stitching workflow.
 - `versions/v0.2.0` — clean Stitch Studio interface.
@@ -39,7 +39,7 @@ Each working release is kept as both a Git tag and a runnable snapshot under
 To run an older snapshot directly:
 
 ```powershell
-cd versions\v0.1.0
+cd versions\v0.1.0\gear360-stitcher
 python main.py
 ```
 
