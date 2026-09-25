@@ -35,6 +35,7 @@ Each working release is kept as both a Git tag and a runnable snapshot under
 - `versions/v0.1.0` — baseline stitching workflow.
 - `versions/v0.2.0` — clean Stitch Studio interface.
 - `versions/v0.2.1` — current interface with the refined calibration workspace.
+- `versions/v0.3.0` — live in-progress previews and main-window stitch controls.
 
 To run an older snapshot directly:
 
@@ -54,6 +55,12 @@ The app has three tabs:
    between the front and back lens looks correct, then **Save profile**. The
    profile is stored in `calibration_profiles/default.json` (as resolution-
    independent fractions), so it applies to both photos and videos.
+
+Both stitching tabs also include **Quick Stitch Controls**. Adjust front/back
+lens center, radius, field of view, back rotation, or seam feathering before
+starting a job. These values apply to that tab's next job without replacing the
+saved default calibration profile. A stitched preview is shown after each photo
+finishes stitching and periodically while each video is processed.
 
 ## How it works
 

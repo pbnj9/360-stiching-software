@@ -5,12 +5,16 @@ import cv2
 from .stitcher import stitch_frame
 
 
-def stitch_photo(input_path, output_path, calibration, out_w=None, out_h=None):
+def stitch_photo(
+    input_path, output_path, calibration, out_w=None, out_h=None, preview_cb=None
+):
     frame = cv2.imread(input_path, cv2.IMREAD_COLOR)
     if frame is None:
         raise ValueError(f"Could not read image: {input_path}")
 
     result = stitch_frame(frame, calibration, out_w=out_w, out_h=out_h)
+    if preview_cb:
+        preview_cb(result)
 
     os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
     ok = cv2.imwrite(output_path, result, [cv2.IMWRITE_JPEG_QUALITY, 95])
@@ -19,7 +23,9 @@ def stitch_photo(input_path, output_path, calibration, out_w=None, out_h=None):
     return output_path
 
 
-def stitch_photos_batch(input_paths, output_dir, calibration, progress_cb=None):
+def stitch_photos_batch(
+    input_paths, output_dir, calibration, progress_cb=None, preview_cb=None
+):
     """Stitch a list of photos. progress_cb(index, total, filename) is called
     after each file completes."""
     total = len(input_paths)
@@ -28,7 +34,16 @@ def stitch_photos_batch(input_paths, output_dir, calibration, progress_cb=None):
         name = os.path.splitext(os.path.basename(path))[0]
         out_path = os.path.join(output_dir, f"{name}_360.jpg")
         try:
-            stitch_photo(path, out_path, calibration)
+            stitch_photo(
+                path,
+                out_path,
+                calibration,
+                preview_cb=(
+                    lambda frame, filename=os.path.basename(path): preview_cb(frame, filename)
+                )
+                if preview_cb
+                else None,
+            )
             results.append((path, out_path, None))
         except Exception as exc:  # noqa: BLE001 - report per-file errors, keep going
             results.append((path, None, str(exc)))

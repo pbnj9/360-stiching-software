@@ -50,6 +50,7 @@ class StitcherApp(tk.Tk):
             kind="photo",
             exts=PHOTO_EXTS,
             get_calibration=lambda: self.calibration,
+            set_calibration=lambda calibration: setattr(self, "calibration", calibration),
             batch_fn=stitch_photos_batch,
         )
         self.video_tab = BatchTab(
@@ -57,6 +58,7 @@ class StitcherApp(tk.Tk):
             kind="video",
             exts=VIDEO_EXTS,
             get_calibration=lambda: self.calibration,
+            set_calibration=lambda calibration: setattr(self, "calibration", calibration),
             batch_fn=stitch_videos_batch,
         )
         self.calib_tab = CalibrationTab(notebook, self)
@@ -67,7 +69,7 @@ class StitcherApp(tk.Tk):
 
         ttk.Label(
             self,
-            text="Version 0.2.1  |  Equirectangular output  |  Local processing",
+            text="Version 0.3.0  |  Equirectangular output  |  Local processing",
             style="Footer.TLabel",
         ).pack(anchor="w", padx=28, pady=(0, 12))
 
@@ -97,18 +99,24 @@ class StitcherApp(tk.Tk):
 
 
 class BatchTab(ttk.Frame):
-    def __init__(self, parent, kind, exts, get_calibration, batch_fn):
+    def __init__(self, parent, kind, exts, get_calibration, set_calibration, batch_fn):
         super().__init__(parent)
         self.configure(style="Workspace.TFrame")
         self.kind = kind
         self.exts = exts
         self.get_calibration = get_calibration
+        self.set_calibration = set_calibration
         self.batch_fn = batch_fn
         self.input_paths = []
         self.output_dir = ""
+        self.control_vars = {}
+        self.preview_image_ref = None
 
-        source_panel = ttk.LabelFrame(self, text="SOURCE FILES", style="Panel.TLabelframe")
-        source_panel.pack(fill="both", expand=True, padx=20, pady=(20, 10))
+        top_area = ttk.Frame(self, style="Workspace.TFrame")
+        top_area.pack(fill="both", expand=True, padx=20, pady=(20, 10))
+
+        source_panel = ttk.LabelFrame(top_area, text="SOURCE FILES", style="Panel.TLabelframe")
+        source_panel.pack(side="left", fill="both", expand=True, padx=(0, 10))
         source_actions = ttk.Frame(source_panel, style="Workspace.TFrame")
         source_actions.pack(fill="x", padx=14, pady=(12, 6))
 
@@ -137,6 +145,61 @@ class BatchTab(ttk.Frame):
             selectforeground="#133b36",
         )
         self.listbox.pack(fill="both", expand=True, padx=14, pady=(4, 14))
+
+        preview_panel = ttk.LabelFrame(
+            top_area, text="LIVE STITCH PREVIEW", style="Panel.TLabelframe"
+        )
+        preview_panel.pack(side="right", fill="both", expand=True)
+        self.preview_label = ttk.Label(
+            preview_panel,
+            text="Start a job to see the stitched output here.",
+            style="Muted.TLabel",
+            anchor="center",
+        )
+        self.preview_label.pack(fill="both", expand=True, padx=14, pady=(14, 6))
+        self.preview_status = ttk.Label(
+            preview_panel, text="No preview yet", style="Muted.TLabel", anchor="center"
+        )
+        self.preview_status.pack(fill="x", padx=14, pady=(0, 14))
+
+        controls_panel = ttk.LabelFrame(
+            self, text="QUICK STITCH CONTROLS", style="Panel.TLabelframe"
+        )
+        controls_panel.pack(fill="x", padx=20, pady=(0, 10))
+        controls_body = ttk.Frame(controls_panel, style="Workspace.TFrame")
+        controls_body.pack(fill="x", padx=14, pady=(8, 4))
+
+        front_controls = ttk.Frame(controls_body, style="Workspace.TFrame")
+        front_controls.pack(side="left", fill="both", expand=True, padx=(0, 14))
+        back_controls = ttk.Frame(controls_body, style="Workspace.TFrame")
+        back_controls.pack(side="left", fill="both", expand=True, padx=(0, 14))
+        blend_controls = ttk.Frame(controls_body, style="Workspace.TFrame")
+        blend_controls.pack(side="left", fill="both", expand=True)
+
+        ttk.Label(front_controls, text="FRONT LENS", style="Muted.TLabel").pack(anchor="w")
+        self._build_stitch_control(front_controls, "front", "cx_frac", "Center X", 0.3, 0.7)
+        self._build_stitch_control(front_controls, "front", "cy_frac", "Center Y", 0.3, 0.7)
+        self._build_stitch_control(front_controls, "front", "radius_frac", "Radius", 0.3, 0.6)
+        self._build_stitch_control(front_controls, "front", "fov_deg", "FOV", 150, 220)
+
+        ttk.Label(back_controls, text="BACK LENS", style="Muted.TLabel").pack(anchor="w")
+        self._build_stitch_control(back_controls, "back", "cx_frac", "Center X", 0.3, 0.7)
+        self._build_stitch_control(back_controls, "back", "cy_frac", "Center Y", 0.3, 0.7)
+        self._build_stitch_control(back_controls, "back", "radius_frac", "Radius", 0.3, 0.6)
+        self._build_stitch_control(back_controls, "back", "fov_deg", "FOV", 150, 220)
+        self._build_stitch_control(back_controls, "back", "rotation_deg", "Rotation", 0, 360)
+
+        ttk.Label(blend_controls, text="SEAM BLEND", style="Muted.TLabel").pack(anchor="w")
+        self._build_stitch_control(blend_controls, "blend", "feather_frac", "Feather", 0.65, 0.95)
+        ttk.Label(
+            blend_controls,
+            text="Changes apply to the next job.",
+            style="Muted.TLabel",
+            wraplength=190,
+        ).pack(anchor="w", pady=(10, 4))
+        ttk.Button(blend_controls, text="Reset controls", command=self.reset_controls).pack(
+            anchor="w"
+        )
 
         output_panel = ttk.LabelFrame(self, text="OUTPUT", style="Panel.TLabelframe")
         output_panel.pack(fill="x", padx=20, pady=(0, 10))
@@ -173,6 +236,35 @@ class BatchTab(ttk.Frame):
         self._queue = queue.Queue()
         self.after(100, self._poll_queue)
 
+    def _build_stitch_control(self, parent, lens, field, label, lo, hi):
+        frame = ttk.Frame(parent, style="Workspace.TFrame")
+        frame.pack(fill="x", pady=2)
+        ttk.Label(frame, text=label, width=10).pack(side="left")
+        if lens == "blend":
+            value = self.get_calibration().get(field, (lo + hi) / 2)
+        else:
+            value = self.get_calibration()[lens].get(field, (lo + hi) / 2)
+        var = tk.DoubleVar(value=value)
+        ttk.Scale(frame, from_=lo, to=hi, variable=var, orient="horizontal").pack(
+            side="left", fill="x", expand=True
+        )
+        self.control_vars[(lens, field)] = var
+
+    def _current_calibration(self):
+        calibration = {"front": {}, "back": {}, "feather_frac": 0.85}
+        for (lens, field), var in self.control_vars.items():
+            if lens == "blend":
+                calibration[field] = var.get()
+            else:
+                calibration[lens][field] = var.get()
+        return calibration
+
+    def reset_controls(self):
+        calibration = load_calibration()
+        for (lens, field), var in self.control_vars.items():
+            value = calibration.get(field) if lens == "blend" else calibration[lens][field]
+            var.set(value)
+
     def add_files(self):
         filetypes = [("Supported files", " ".join(f"*{e}" for e in self.exts))]
         paths = filedialog.askopenfilenames(title=f"Select {self.kind} files", filetypes=filetypes)
@@ -203,7 +295,11 @@ class BatchTab(ttk.Frame):
         self.progress.config(maximum=len(self.input_paths), value=0)
         self.status_label.config(text="Starting...")
 
-        calibration = self.get_calibration()
+        calibration = self._current_calibration()
+        self.set_calibration(calibration)
+        self.preview_image_ref = None
+        self.preview_label.config(image="", text="Waiting for the first stitched frame...")
+        self.preview_status.config(text="Preview updates while processing")
         thread = threading.Thread(
             target=self._run_batch, args=(calibration,), daemon=True
         )
@@ -213,9 +309,16 @@ class BatchTab(ttk.Frame):
         def progress_cb(*args):
             self._queue.put(("progress", args))
 
+        def preview_cb(frame, label):
+            self._queue.put(("preview", (frame, label)))
+
         try:
             results = self.batch_fn(
-                self.input_paths, self.output_dir, calibration, progress_cb=progress_cb
+                self.input_paths,
+                self.output_dir,
+                calibration,
+                progress_cb=progress_cb,
+                preview_cb=preview_cb,
             )
             self._queue.put(("done", results))
         except Exception as exc:  # noqa: BLE001
@@ -236,6 +339,8 @@ class BatchTab(ttk.Frame):
                         self.status_label.config(
                             text=f"[{i}/{total}] {name} - frame {frame_idx}/{frame_total}"
                         )
+                elif kind == "preview":
+                    self._show_preview(*payload)
                 elif kind == "done":
                     self.start_button.config(state="normal")
                     failed = [r for r in payload if r[-1]]
@@ -257,6 +362,17 @@ class BatchTab(ttk.Frame):
         except queue.Empty:
             pass
         self.after(100, self._poll_queue)
+
+    def _show_preview(self, frame, label):
+        preview = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        height, width = preview.shape[:2]
+        max_width, max_height = 430, 220
+        scale = min(max_width / width, max_height / height, 1.0)
+        if scale < 1.0:
+            preview = cv2.resize(preview, (int(width * scale), int(height * scale)))
+        self.preview_image_ref = ImageTk.PhotoImage(Image.fromarray(preview))
+        self.preview_label.config(image=self.preview_image_ref, text="")
+        self.preview_status.config(text=label)
 
 
 class CalibrationTab(ttk.Frame):

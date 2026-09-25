@@ -1,0 +1,64 @@
+GEAR 360 STITCHER v0.3.0 - HOW TO USE
+========================================
+
+WHAT THIS VERSION DOES
+v0.3.0 adds in-progress stitched previews and Quick Stitch Controls directly
+to the Stitch Photos and Stitch Videos tabs.
+
+OPEN THIS VERSION
+1. Open PowerShell.
+2. Run:
+   cd "C:\Users\jacks\OneDrive\Desktop\360 stiching software\gear360-stitcher\versions\v0.3.0\gear360-stitcher"
+3. Install requirements once:
+   python -m pip install -r requirements.txt
+4. Start the app:
+   python main.py
+
+STITCH PHOTOS WITH A PREVIEW
+1. Open Stitch Photos.
+2. Select Add photos and choose raw Gear 360 JPG files.
+3. Select Choose folder and choose the output destination.
+4. Adjust Quick Stitch Controls if the saved lens profile needs a temporary change.
+5. Select Start stitching.
+6. The Live Stitch Preview shows the equirectangular result after each photo is
+   stitched. Output files are named <original name>_360.jpg.
+
+STITCH VIDEOS WITH A PREVIEW
+1. Open Stitch Videos.
+2. Select Add videos and choose raw Gear 360 MP4 files.
+3. Select Choose folder and choose the output destination.
+4. Adjust Quick Stitch Controls if needed, then select Start stitching.
+5. The Live Stitch Preview updates for the first frame, about once per second,
+   and the final frame of each video. Output files are named <original name>_360.mp4.
+
+QUICK STITCH CONTROLS
+- Front Lens and Back Lens: Center X, Center Y, Radius, and FOV adjust the
+  projection used for the next job on that tab.
+- Back Rotation: aligns the back lens with the front lens.
+- Seam Feather: adjusts the blend width where the two lenses overlap.
+- Reset controls: reloads the saved default profile.
+- Quick controls do not overwrite the saved default profile. Use Calibration
+  and Save profile when a profile should be kept for future sessions.
+
+CALIBRATION
+1. Open Calibration and load a sample photo or video.
+2. Adjust the lens controls and select Preview to inspect the seam.
+3. Select Save profile to keep the corrected profile for later sessions.
+
+VIDEO AUDIO
+FFmpeg preserves source audio in stitched MP4 output.
+1. Close Gear 360 Stitcher and open PowerShell as a normal user.
+2. Run:
+   winget install --id Gyan.FFmpeg -e --accept-source-agreements --accept-package-agreements
+3. Close PowerShell, open a new PowerShell window, and run:
+   ffmpeg -version
+4. Restart the app. The Stitch Videos tab will show whether FFmpeg is available.
+
+KEYBOARD USE
+This version has no app-specific keyboard shortcuts. Standard Windows controls
+are available:
+- Tab / Shift+Tab: move forward/backward between controls.
+- Space: activate the focused button.
+- Arrow keys: change a focused file-list selection or calibration/quick-control slider.
+- Home / End / Page Up / Page Down: move through a focused file list.
+- File and folder dialogs use their normal Windows keyboard controls.

@@ -26,6 +26,7 @@ def stitch_video(
     out_w=None,
     out_h=None,
     frame_progress_cb=None,
+    preview_cb=None,
 ):
     """Stitch one video. frame_progress_cb(frame_index, total_frames) is called
     periodically. Returns (output_path, audio_muxed: bool)."""
@@ -58,6 +59,7 @@ def stitch_video(
 
     maps_cache = {}
     frame_index = 0
+    preview_interval = max(round(fps), 1)
     try:
         while True:
             ok, frame = cap.read()
@@ -68,6 +70,12 @@ def stitch_video(
             )
             writer.write(stitched)
             frame_index += 1
+            if preview_cb and (
+                frame_index == 1
+                or frame_index % preview_interval == 0
+                or frame_index == total_frames
+            ):
+                preview_cb(stitched, frame_index, total_frames)
             if frame_progress_cb:
                 frame_progress_cb(frame_index, total_frames)
     finally:
@@ -111,7 +119,9 @@ def _mux_audio(original_path, silent_video_path, final_output_path):
     return False
 
 
-def stitch_videos_batch(input_paths, output_dir, calibration, progress_cb=None):
+def stitch_videos_batch(
+    input_paths, output_dir, calibration, progress_cb=None, preview_cb=None
+):
     """Stitch a list of videos. progress_cb(index, total, filename, frame, frame_total)
     is called during processing."""
     total = len(input_paths)
@@ -124,8 +134,21 @@ def stitch_videos_batch(input_paths, output_dir, calibration, progress_cb=None):
             if progress_cb:
                 progress_cb(_i + 1, total, os.path.basename(_path), frame_idx, frame_total)
 
+        def preview_frame_cb(frame, frame_idx, frame_total, _path=path):
+            if preview_cb:
+                preview_cb(
+                    frame,
+                    f"{os.path.basename(_path)} - frame {frame_idx}/{frame_total}",
+                )
+
         try:
-            _, audio_muxed = stitch_video(path, out_path, calibration, frame_progress_cb=frame_cb)
+            _, audio_muxed = stitch_video(
+                path,
+                out_path,
+                calibration,
+                frame_progress_cb=frame_cb,
+                preview_cb=preview_frame_cb,
+            )
             results.append((path, out_path, audio_muxed, None))
         except Exception as exc:  # noqa: BLE001 - report per-file errors, keep going
             results.append((path, None, False, str(exc)))
