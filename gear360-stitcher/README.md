@@ -34,8 +34,9 @@ Each working release is kept as both a Git tag and a runnable snapshot under
 
 - `versions/v0.1.0` — baseline stitching workflow.
 - `versions/v0.2.0` — clean Stitch Studio interface.
-- `versions/v0.2.1` — current interface with the refined calibration workspace.
+- `versions/v0.2.1` — interface with the refined calibration workspace.
 - `versions/v0.3.0` — live in-progress previews and main-window stitch controls.
+- `versions/v0.3.1` — always-visible output picker and Start stitching action.
 
 To run an older snapshot directly:
 

@@ -69,7 +69,7 @@ class StitcherApp(tk.Tk):
 
         ttk.Label(
             self,
-            text="Version 0.3.0  |  Equirectangular output  |  Local processing",
+            text="Version 0.3.1  |  Equirectangular output  |  Local processing",
             style="Footer.TLabel",
         ).pack(anchor="w", padx=28, pady=(0, 12))
 
@@ -131,6 +131,16 @@ class BatchTab(ttk.Frame):
         ttk.Button(source_actions, text="Clear", command=self.clear_files).pack(
             side="right", padx=(0, 8)
         )
+        ttk.Button(
+            source_actions, text="Choose output", command=self.choose_output
+        ).pack(side="right", padx=(0, 8))
+        self.start_button = ttk.Button(
+            source_actions,
+            text="Start stitching",
+            command=self.start,
+            style="Primary.TButton",
+        )
+        self.start_button.pack(side="right", padx=(0, 8))
 
         self.listbox = tk.Listbox(
             source_panel,
@@ -201,15 +211,12 @@ class BatchTab(ttk.Frame):
             anchor="w"
         )
 
-        output_panel = ttk.LabelFrame(self, text="OUTPUT", style="Panel.TLabelframe")
-        output_panel.pack(fill="x", padx=20, pady=(0, 10))
+        output_panel = ttk.Frame(self, style="Workspace.TFrame")
+        output_panel.pack(fill="x", padx=20, pady=(0, 8))
         self.output_label = ttk.Label(
-            output_panel, text="No destination selected", style="Muted.TLabel"
+            output_panel, text="Output: no destination selected", style="Muted.TLabel"
         )
-        self.output_label.pack(side="left", padx=14, pady=12)
-        ttk.Button(
-            output_panel, text="Choose folder", command=self.choose_output
-        ).pack(side="right", padx=14, pady=8)
+        self.output_label.pack(side="left")
 
         bottom = ttk.Frame(self, style="Workspace.TFrame")
         bottom.pack(fill="x", padx=20, pady=(0, 14))
@@ -222,11 +229,6 @@ class BatchTab(ttk.Frame):
                 else "ffmpeg NOT found on PATH: output video will be silent (no audio)."
             )
             ttk.Label(bottom, text=note, style="Muted.TLabel").pack(side="left")
-
-        self.start_button = ttk.Button(
-            bottom, text="Start stitching", command=self.start, style="Primary.TButton"
-        )
-        self.start_button.pack(side="right")
 
         self.progress = ttk.Progressbar(self, mode="determinate")
         self.progress.pack(fill="x", padx=20, pady=(0, 6))
@@ -281,7 +283,7 @@ class BatchTab(ttk.Frame):
         d = filedialog.askdirectory(title="Choose output folder")
         if d:
             self.output_dir = d
-            self.output_label.config(text=d)
+            self.output_label.config(text=f"Output: {d}")
 
     def start(self):
         if not self.input_paths:
