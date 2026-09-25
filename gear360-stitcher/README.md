@@ -27,6 +27,22 @@ audio track (video-only output still works).
 python main.py
 ```
 
+## Versions
+
+Each working release is kept as both a Git tag and a runnable snapshot under
+`versions/`:
+
+- `versions/v0.1.0` — baseline stitching workflow.
+- `versions/v0.2.0` — clean Stitch Studio interface.
+- `versions/v0.2.1` — current interface with the refined calibration workspace.
+
+To run an older snapshot directly:
+
+```powershell
+cd versions\v0.1.0
+python main.py
+```
+
 The app has three tabs:
 
 1. **Stitch Photos** — add one or more `.jpg` files, pick an output folder,

@@ -67,7 +67,7 @@ class StitcherApp(tk.Tk):
 
         ttk.Label(
             self,
-            text="Version 0.2.0  |  Equirectangular output  |  Local processing",
+            text="Version 0.2.1  |  Equirectangular output  |  Local processing",
             style="Footer.TLabel",
         ).pack(anchor="w", padx=28, pady=(0, 12))
 
@@ -265,26 +265,33 @@ class CalibrationTab(ttk.Frame):
 
     def __init__(self, parent, app):
         super().__init__(parent)
+        self.configure(style="Workspace.TFrame")
         self.app = app
         self.sample_frame = None
         self.preview_image_ref = None
 
-        left = ttk.Frame(self)
-        left.pack(side="left", fill="y", padx=10, pady=10)
+        left = ttk.LabelFrame(self, text="LENS PROFILE", style="Panel.TLabelframe")
+        left.pack(side="left", fill="y", padx=(20, 10), pady=20)
 
-        right = ttk.Frame(self)
-        right.pack(side="right", fill="both", expand=True, padx=10, pady=10)
+        right = ttk.LabelFrame(self, text="EQUIRECTANGULAR PREVIEW", style="Panel.TLabelframe")
+        right.pack(side="right", fill="both", expand=True, padx=(0, 20), pady=20)
 
         ttk.Button(left, text="Load sample photo/video...", command=self.load_sample).pack(
-            fill="x", pady=(0, 10)
+            fill="x", padx=14, pady=(14, 8)
         )
+        ttk.Label(
+            left,
+            text="Tune the profile while watching the seam in the preview.",
+            style="Muted.TLabel",
+            wraplength=285,
+        ).pack(fill="x", padx=14, pady=(0, 10))
 
         self.vars = {}
         self._build_slider(left, "front", "cx_frac", "Front center X", 0.3, 0.7)
         self._build_slider(left, "front", "cy_frac", "Front center Y", 0.3, 0.7)
         self._build_slider(left, "front", "radius_frac", "Front radius", 0.3, 0.6)
         self._build_slider(left, "front", "fov_deg", "Front FOV (deg)", 150, 220)
-        ttk.Separator(left, orient="horizontal").pack(fill="x", pady=10)
+        ttk.Separator(left, orient="horizontal").pack(fill="x", padx=14, pady=10)
         self._build_slider(left, "back", "cx_frac", "Back center X", 0.3, 0.7)
         self._build_slider(left, "back", "cy_frac", "Back center Y", 0.3, 0.7)
         self._build_slider(left, "back", "radius_frac", "Back radius", 0.3, 0.6)
@@ -292,17 +299,21 @@ class CalibrationTab(ttk.Frame):
         self._build_slider(left, "back", "rotation_deg", "Back rotation (deg)", 0, 360)
 
         btns = ttk.Frame(left)
-        btns.pack(fill="x", pady=10)
+        btns.pack(fill="x", padx=14, pady=(10, 14))
         ttk.Button(btns, text="Preview", command=self.update_preview).pack(side="left")
-        ttk.Button(btns, text="Save profile", command=self.save_profile).pack(side="left", padx=6)
-        ttk.Button(btns, text="Reset defaults", command=self.reset_defaults).pack(side="left")
+        ttk.Button(btns, text="Save profile", command=self.save_profile, style="Primary.TButton").pack(side="right")
 
-        self.preview_label = ttk.Label(right, text="Load a sample file to preview stitching.")
-        self.preview_label.pack(fill="both", expand=True)
+        self.preview_label = ttk.Label(
+            right,
+            text="Load a photo or video to inspect the stitch.",
+            style="Muted.TLabel",
+            anchor="center",
+        )
+        self.preview_label.pack(fill="both", expand=True, padx=14, pady=14)
 
     def _build_slider(self, parent, lens, field, label, lo, hi):
         frame = ttk.Frame(parent)
-        frame.pack(fill="x", pady=2)
+        frame.pack(fill="x", padx=14, pady=3)
         ttk.Label(frame, text=label, width=18).pack(side="left")
         value = self.app.calibration[lens].get(field, (lo + hi) / 2)
         var = tk.DoubleVar(value=value)
