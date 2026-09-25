@@ -1,0 +1,16 @@
+{
+  "front": {
+    "cx_frac": 0.5,
+    "cy_frac": 0.5,
+    "radius_frac": 0.5,
+    "fov_deg": 195.0
+  },
+  "back": {
+    "cx_frac": 0.5,
+    "cy_frac": 0.5,
+    "radius_frac": 0.5,
+    "fov_deg": 195.0,
+    "rotation_deg": 0.0
+  },
+  "feather_frac": 0.85
+}
