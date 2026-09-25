@@ -36,6 +36,22 @@ CALIBRATE THE LENSES
 5. Select Save profile when the seam looks right.
 
 VIDEO AUDIO
-Install FFmpeg and restart the app to preserve source audio:
-  winget install ffmpeg
+FFmpeg preserves audio from the original video.
+1. Close Gear 360 Stitcher and open PowerShell as a normal user.
+2. Run:
+   winget install --id Gyan.FFmpeg -e --accept-source-agreements --accept-package-agreements
+3. Close PowerShell, open a new PowerShell window, and run:
+   ffmpeg -version
+4. Restart Gear 360 Stitcher. The Stitch Videos tab will show that FFmpeg is detected.
+
 Without FFmpeg, stitched videos still work but are silent.
+
+KEYBOARD USE
+This version has no app-specific keyboard shortcuts. Standard Windows controls
+are available:
+- Tab / Shift+Tab: move forward/backward between controls.
+- Space: activate the focused button.
+- Arrow keys: change the selection in a focused file list.
+- Home / End / Page Up / Page Down: move through a focused file list.
+- Arrow keys: adjust a focused calibration slider.
+- File and folder dialogs use their normal Windows keyboard controls.
