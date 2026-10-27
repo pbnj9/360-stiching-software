@@ -27,6 +27,22 @@ audio track (video-only output still works).
 python main.py
 ```
 
+## Windows app (.exe)
+
+Build a standalone Windows executable from PowerShell:
+
+```powershell
+cd "gear360-stitcher"
+.\build-exe.ps1
+```
+
+The app is created at `dist\Gear-360-Stitcher.exe`. Double-click it to run;
+Python is not required on the computer running the executable. The first
+calibration profile save is stored in
+`%LOCALAPPDATA%\Gear360Stitcher\calibration_profiles\default.json`, so it
+remains writable and persists across app updates. FFmpeg remains optional and
+must be installed separately to preserve video audio.
+
 ## Versions
 
 Each working release is kept as both a Git tag and a runnable snapshot under
@@ -62,6 +78,12 @@ lens center, radius, field of view, back rotation, or seam feathering before
 starting a job. These values apply to that tab's next job without replacing the
 saved default calibration profile. A stitched preview is shown after each photo
 finishes stitching and periodically while each video is processed.
+
+The Calibration tab shows both the full 360 panorama and a perspective-corrected
+normal view. Its sliders update both previews automatically. Use the Yaw,
+Pitch, and FOV controls to aim the normal view at your subject, then select
+**Export normal view** to save a standard JPG. The original `_360.jpg` or
+`_360.mp4` output remains the full panorama.
 
 ## How it works
 

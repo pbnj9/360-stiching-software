@@ -6,12 +6,25 @@ size (not absolute pixels), so a single profile works for both photo resolution
 """
 import json
 import os
+import sys
 
-DEFAULT_PROFILE_PATH = os.path.join(
+_BUNDLED_PROFILE_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "calibration_profiles",
     "default.json",
 )
+
+
+def _default_profile_path():
+    if not getattr(sys, "frozen", False):
+        return _BUNDLED_PROFILE_PATH
+    app_data = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+    return os.path.join(
+        app_data, "Gear360Stitcher", "calibration_profiles", "default.json"
+    )
+
+
+DEFAULT_PROFILE_PATH = _default_profile_path()
 
 DEFAULT_CALIBRATION = {
     "front": {"cx_frac": 0.5, "cy_frac": 0.5, "radius_frac": 0.5, "fov_deg": 195.0},
@@ -28,6 +41,11 @@ DEFAULT_CALIBRATION = {
 
 def load_calibration(path=None):
     path = path or DEFAULT_PROFILE_PATH
+    if not os.path.isfile(path):
+        if path == DEFAULT_PROFILE_PATH and os.path.isfile(_BUNDLED_PROFILE_PATH):
+            path = _BUNDLED_PROFILE_PATH
+        else:
+            return json.loads(json.dumps(DEFAULT_CALIBRATION))
     if not os.path.isfile(path):
         return json.loads(json.dumps(DEFAULT_CALIBRATION))
     with open(path, "r", encoding="utf-8") as f:

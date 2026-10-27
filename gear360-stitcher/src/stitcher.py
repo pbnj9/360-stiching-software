@@ -31,7 +31,7 @@ def _lens_map(x, y, z, lens, size, feather_frac, offset_x=0.0):
     cy = lens["cy_frac"] * size
 
     px = cx + r_norm * radius * np.cos(phi) + offset_x
-    py = cy + r_norm * radius * np.sin(phi)
+    py = cy - r_norm * radius * np.sin(phi)
 
     valid = r_norm <= 1.0
     weight = np.ones_like(r_norm)
@@ -116,6 +116,52 @@ def apply_stitch(frame, maps):
     blended = np.where(total > 1e-6, blended, 0.0)
 
     return np.clip(blended, 0, 255).astype(np.uint8)
+
+
+def reframe_equirect(
+    frame, yaw_deg=0.0, pitch_deg=0.0, fov_deg=90.0, out_w=1280, out_h=None
+):
+    """Render a perspective-corrected view from an equirectangular BGR frame.
+
+    Positive yaw looks right; positive pitch looks upward. The output uses a
+    16:9 aspect ratio by default and is suitable for viewing or exporting as a
+    normal photograph.
+    """
+    if not 1.0 < fov_deg < 179.0:
+        raise ValueError("Field of view must be between 1 and 179 degrees.")
+    if out_w <= 0:
+        raise ValueError("Output width must be positive.")
+
+    src_h, src_w = frame.shape[:2]
+    out_h = out_h or round(out_w * 9 / 16)
+    if out_h <= 0:
+        raise ValueError("Output height must be positive.")
+
+    hfov = np.radians(fov_deg)
+    vfov = 2.0 * np.arctan(np.tan(hfov / 2.0) * out_h / out_w)
+    xs = np.linspace(-np.tan(hfov / 2.0), np.tan(hfov / 2.0), out_w)
+    ys = np.linspace(np.tan(vfov / 2.0), -np.tan(vfov / 2.0), out_h)
+    x, y = np.meshgrid(xs, ys)
+    z = np.ones_like(x)
+    length = np.sqrt(x * x + y * y + z * z)
+    x, y, z = x / length, y / length, z / length
+
+    pitch = np.radians(pitch_deg)
+    y, z = np.cos(pitch) * y + np.sin(pitch) * z, -np.sin(pitch) * y + np.cos(pitch) * z
+    yaw = np.radians(yaw_deg)
+    x, z = np.cos(yaw) * x + np.sin(yaw) * z, -np.sin(yaw) * x + np.cos(yaw) * z
+
+    longitude = np.arctan2(x, z)
+    latitude = np.arcsin(np.clip(y, -1.0, 1.0))
+    map_x = ((longitude / (2.0 * np.pi) + 0.5) * src_w).astype(np.float32)
+    map_y = ((0.5 - latitude / np.pi) * src_h).astype(np.float32)
+    return cv2.remap(
+        frame,
+        map_x,
+        map_y,
+        interpolation=cv2.INTER_LINEAR,
+        borderMode=cv2.BORDER_WRAP,
+    )
 
 
 def stitch_frame(frame, calibration, out_w=None, out_h=None, maps_cache=None):

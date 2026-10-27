@@ -1,0 +1,5 @@
+gear360-stitcher/__pycache__/
+gear360-stitcher/src/__pycache__/
+gear360-stitcher/build/
+gear360-stitcher/dist/
+gear360-stitcher/*.spec

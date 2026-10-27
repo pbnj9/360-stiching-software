@@ -7,13 +7,25 @@ stitching and Choose output buttons are always visible in the Source Files
 toolbar, even on shorter screens.
 
 OPEN THIS VERSION
+OPTION A - WINDOWS APP
+1. Open the `gear360-stitcher\dist` folder.
+2. Double-click `Gear-360-Stitcher.exe`.
+   Python is not needed to run the executable.
+
+OPTION B - PYTHON SOURCE
 1. Open PowerShell.
 2. Run:
-   cd "C:\Users\jacks\OneDrive\Desktop\360 stiching software\gear360-stitcher\versions\v0.3.1\gear360-stitcher"
+   cd "C:\Users\jacks\OneDrive\Desktop\360 stiching software\gear360-stitcher"
 3. Install requirements once:
    python -m pip install -r requirements.txt
 4. Start the app:
    python main.py
+
+BUILD THE WINDOWS APP
+1. Open PowerShell in the current `gear360-stitcher` folder.
+2. Run:
+   .\build-exe.ps1
+3. The executable is created at `dist\Gear-360-Stitcher.exe`.
 
 STITCH PHOTOS OR VIDEOS
 1. Open Stitch Photos or Stitch Videos.
@@ -39,8 +51,13 @@ QUICK STITCH CONTROLS
 
 CALIBRATION
 1. Open Calibration and load a sample photo or video.
-2. Adjust the lens controls, then select Preview to inspect the seam.
+2. Adjust the lens controls; both previews update automatically as you move a
+   slider, so you can inspect the seam immediately.
 3. Select Save profile to keep the corrected profile for later sessions.
+4. The preview also includes a normal, perspective-corrected view. Adjust Yaw,
+   Pitch, and FOV until you can clearly see the subject, then select Export
+   normal view to save it as a regular JPG. This does not replace the full 360
+   panorama output.
 
 VIDEO AUDIO
 FFmpeg preserves source audio in stitched MP4 output.
