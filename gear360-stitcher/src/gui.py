@@ -1,5 +1,6 @@
 """Tkinter GUI for the Gear 360 (2017 / SM-R210) dual-fisheye stitcher."""
 import os
+import json
 import queue
 import threading
 import tkinter as tk
@@ -9,6 +10,7 @@ import cv2
 from PIL import Image, ImageTk
 
 from .calibration import load_calibration, save_calibration, DEFAULT_PROFILE_PATH
+from .editor_model import EditorProject, ProjectHistory, ReframeKeyframe
 from .image_pipeline import stitch_photos_batch
 from .video_pipeline import stitch_videos_batch, ffmpeg_available
 from .stitcher import reframe_equirect, stitch_frame
@@ -21,82 +23,253 @@ CALIBRATION_PREVIEW_WIDTH = 1280
 class StitcherApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Gear 360 Stitcher - v0.3.1")
-        self.geometry("1100x720")
-        self.minsize(900, 620)
-        self.configure(background="#edf1ee")
+        self.title("Gear 360 Studio")
+        self.geometry("1440x900")
+        self.minsize(1100, 700)
+        self.configure(background="#111a1d")
         self._configure_style()
 
         self.calibration = load_calibration()
 
-        header = ttk.Frame(self, style="Header.TFrame")
-        header.pack(fill="x")
-        title_area = ttk.Frame(header, style="Header.TFrame")
-        title_area.pack(fill="x", padx=28, pady=(20, 18))
-        ttk.Label(title_area, text="GEAR 360", style="Brand.TLabel").pack(anchor="w")
-        ttk.Label(title_area, text="Stitch Studio", style="Title.TLabel").pack(anchor="w", pady=(2, 0))
-        ttk.Label(
-            title_area,
-            text="Samsung Gear 360 (2017 / SM-R210) dual-fisheye conversion",
-            style="Subtitle.TLabel",
-        ).pack(anchor="w", pady=(4, 0))
-
-        content = ttk.Frame(self, style="Canvas.TFrame")
-        content.pack(fill="both", expand=True, padx=22, pady=(18, 12))
-        notebook = ttk.Notebook(self)
-        notebook.pack(in_=content, fill="both", expand=True)
-
-        self.photo_tab = BatchTab(
-            notebook,
-            kind="photo",
-            exts=PHOTO_EXTS,
-            get_calibration=lambda: self.calibration,
-            set_calibration=lambda calibration: setattr(self, "calibration", calibration),
-            batch_fn=stitch_photos_batch,
+        toolbar = ttk.Frame(self, style="Header.TFrame")
+        toolbar.pack(fill="x")
+        ttk.Label(toolbar, text="GEAR 360", style="Brand.TLabel").pack(
+            side="left", padx=18, pady=12
         )
-        self.video_tab = BatchTab(
-            notebook,
-            kind="video",
-            exts=VIDEO_EXTS,
-            get_calibration=lambda: self.calibration,
-            set_calibration=lambda calibration: setattr(self, "calibration", calibration),
-            batch_fn=stitch_videos_batch,
-        )
-        self.calib_tab = CalibrationTab(notebook, self)
-
-        notebook.add(self.photo_tab, text="Stitch Photos")
-        notebook.add(self.video_tab, text="Stitch Videos")
-        notebook.add(self.calib_tab, text="Calibration")
-
-        ttk.Label(
-            self,
-            text="Version 0.3.1  |  Equirectangular output  |  Local processing",
-            style="Footer.TLabel",
-        ).pack(anchor="w", padx=28, pady=(0, 12))
+        ttk.Label(toolbar, text="STUDIO", style="Title.TLabel").pack(side="left")
+        self.editor = EditorTab(self, self)
+        self.editor.pack(fill="both", expand=True)
 
     def _configure_style(self):
         style = ttk.Style(self)
         style.theme_use("clam")
-        style.configure("Canvas.TFrame", background="#edf1ee")
-        style.configure("Header.TFrame", background="#133b36")
-        style.configure("Brand.TLabel", background="#133b36", foreground="#f3b64a", font=("Segoe UI", 9, "bold"))
-        style.configure("Title.TLabel", background="#133b36", foreground="#ffffff", font=("Georgia", 25, "bold"))
-        style.configure("Subtitle.TLabel", background="#133b36", foreground="#c6d7d3", font=("Segoe UI", 10))
-        style.configure("Footer.TLabel", background="#edf1ee", foreground="#59706a", font=("Segoe UI", 9))
-        style.configure("TNotebook", background="#edf1ee", borderwidth=0)
-        style.configure("TNotebook.Tab", background="#d9e2de", foreground="#29423d", padding=(18, 10), font=("Segoe UI", 10, "bold"))
-        style.map("TNotebook.Tab", background=[("selected", "#ffffff")], foreground=[("selected", "#0b5d52")])
-        style.configure("Workspace.TFrame", background="#ffffff")
-        style.configure("Panel.TLabelframe", background="#ffffff", bordercolor="#cbd7d2", relief="solid")
-        style.configure("Panel.TLabelframe.Label", background="#ffffff", foreground="#133b36", font=("Segoe UI", 11, "bold"))
-        style.configure("TLabel", background="#ffffff", foreground="#29423d", font=("Segoe UI", 10))
-        style.configure("Muted.TLabel", background="#ffffff", foreground="#647873", font=("Segoe UI", 9))
-        style.configure("Status.TLabel", background="#ffffff", foreground="#0b5d52", font=("Segoe UI", 10, "bold"))
-        style.configure("TButton", padding=(12, 7), font=("Segoe UI", 10))
-        style.configure("Primary.TButton", background="#0b7567", foreground="#ffffff", borderwidth=0, padding=(16, 8), font=("Segoe UI", 10, "bold"))
-        style.map("Primary.TButton", background=[("active", "#075c51"), ("disabled", "#9ebbb5")])
-        style.configure("TProgressbar", troughcolor="#dbe5e1", background="#0b7567", thickness=8)
-        style.configure("Horizontal.TScale", background="#ffffff", troughcolor="#dbe5e1")
+        style.configure("Canvas.TFrame", background="#0b1114")
+        style.configure("Header.TFrame", background="#101b20")
+        style.configure("Toolbar.TFrame", background="#101b20")
+        style.configure("Panel.TFrame", background="#141f24")
+        style.configure("Brand.TLabel", background="#101b20", foreground="#46d9c2", font=("Segoe UI", 9, "bold"))
+        style.configure("Title.TLabel", background="#101b20", foreground="#f2f8f7", font=("Segoe UI Semibold", 18))
+        style.configure("Subtitle.TLabel", background="#101b20", foreground="#8ea3a4", font=("Segoe UI", 9))
+        style.configure("Toolbar.TLabel", background="#101b20", foreground="#b7c8c8", font=("Segoe UI", 9))
+        style.configure("Panel.TLabelframe", background="#141f24", bordercolor="#26353b", relief="solid")
+        style.configure("Panel.TLabelframe.Label", background="#141f24", foreground="#dce8e7", font=("Segoe UI", 9, "bold"))
+        style.configure("TLabel", background="#141f24", foreground="#dce8e7", font=("Segoe UI", 9))
+        style.configure("Muted.TLabel", background="#141f24", foreground="#7f9899", font=("Segoe UI", 9))
+        style.configure("Section.TLabel", background="#141f24", foreground="#46d9c2", font=("Segoe UI", 8, "bold"))
+        style.configure("Value.TLabel", background="#141f24", foreground="#f2f8f7", font=("Cascadia Mono", 9))
+        style.configure("TButton", background="#1c2a30", foreground="#dce8e7", borderwidth=0, padding=(10, 6), font=("Segoe UI", 9))
+        style.map("TButton", background=[("active", "#284048"), ("disabled", "#172126")], foreground=[("disabled", "#61777a")])
+        style.configure("Tool.TButton", background="#101b20", foreground="#b7c8c8", borderwidth=0, padding=(8, 5), font=("Segoe UI", 9))
+        style.map("Tool.TButton", background=[("active", "#22363b")], foreground=[("active", "#f2f8f7")])
+        style.configure("Primary.TButton", background="#0d907f", foreground="#ffffff", borderwidth=0, padding=(12, 7), font=("Segoe UI Semibold", 9))
+        style.map("Primary.TButton", background=[("active", "#11aa96"), ("disabled", "#245d58")])
+        style.configure("TCombobox", fieldbackground="#1c2a30", background="#1c2a30", foreground="#e7f2ef", arrowcolor="#46d9c2", padding=5)
+        style.map("TCombobox", fieldbackground=[("readonly", "#1c2a30")], foreground=[("readonly", "#e7f2ef")])
+        style.configure("Horizontal.TScale", background="#141f24", troughcolor="#263940")
+        style.configure("Timeline.Horizontal.TScale", background="#141f24", troughcolor="#1e4a4b")
+        style.configure("TPanedwindow", background="#0b1114")
+        style.configure("TSeparator", background="#26353b")
+        style.configure("TProgressbar", troughcolor="#1c2a30", background="#0d907f", thickness=6)
+
+
+class EditorTab(ttk.Frame):
+    """Dockable single-clip 360 editor with reframing controls and a timeline."""
+
+    def __init__(self, parent, app):
+        super().__init__(parent, style="Canvas.TFrame")
+        self.app = app
+        self.history = ProjectHistory()
+        self.duration = 0.0
+        self.frame = None
+        self.playing = False
+        self._preview_after_id = None
+        self.time_var = tk.DoubleVar()
+        self.yaw_var = tk.DoubleVar()
+        self.pitch_var = tk.DoubleVar()
+        self.fov_var = tk.DoubleVar(value=90)
+        self.trim_start_var = tk.DoubleVar()
+        self.trim_end_var = tk.DoubleVar()
+        self.preset_var = tk.StringVar(value="Reframed 1080p")
+        self._build()
+        self.bind_all("<space>", lambda _: self.toggle_playback())
+        self.bind_all("<Control-z>", lambda _: self.undo())
+        self.bind_all("<Control-y>", lambda _: self.redo())
+        self.bind_all("<Left>", lambda _: self.step(-1))
+        self.bind_all("<Right>", lambda _: self.step(1))
+
+    def _build(self):
+        actions = ttk.Frame(self, style="Toolbar.TFrame")
+        actions.pack(fill="x", padx=16, pady=(8, 12))
+        ttk.Button(actions, text="Import media", command=self.import_media, style="Primary.TButton").pack(side="left")
+        ttk.Button(actions, text="Open", command=self.open_project, style="Tool.TButton").pack(side="left", padx=(8, 0))
+        ttk.Button(actions, text="Save", command=self.save_project, style="Tool.TButton").pack(side="left")
+        ttk.Separator(actions, orient="vertical").pack(side="left", fill="y", padx=10, pady=3)
+        ttk.Button(actions, text="Undo", command=self.undo, style="Tool.TButton").pack(side="left")
+        ttk.Button(actions, text="Redo", command=self.redo, style="Tool.TButton").pack(side="left")
+        ttk.Button(actions, text="Export", command=self.export, style="Primary.TButton").pack(side="right")
+        self.status = ttk.Label(actions, text="Ready to import 360 media", style="Toolbar.TLabel")
+        self.status.pack(side="right", padx=16)
+
+        panes = ttk.PanedWindow(self, orient="horizontal")
+        panes.pack(fill="both", expand=True, padx=16, pady=(0, 10))
+        media = ttk.LabelFrame(panes, text="MEDIA", style="Panel.TLabelframe")
+        center = ttk.LabelFrame(panes, text="REFRAME CANVAS", style="Panel.TLabelframe")
+        inspector = ttk.LabelFrame(panes, text="INSPECTOR", style="Panel.TLabelframe")
+        panes.add(media, weight=1)
+        panes.add(center, weight=4)
+        panes.add(inspector, weight=1)
+        media_top = ttk.Frame(media, style="Panel.TFrame")
+        media_top.pack(fill="x", padx=10, pady=(10, 6))
+        ttk.Label(media_top, text="PROJECT MEDIA", style="Section.TLabel").pack(side="left")
+        ttk.Label(media_top, text="1 SLOT", style="Muted.TLabel").pack(side="right")
+        self.media_list = tk.Listbox(
+            media, background="#101a1e", foreground="#e7f2ef", selectbackground="#0d907f",
+            selectforeground="#ffffff", highlightthickness=0, activestyle="none", borderwidth=0,
+            font=("Segoe UI", 10), relief="flat",
+        )
+        self.media_list.pack(fill="both", expand=True, padx=10, pady=(0, 8))
+        ttk.Label(media, text="Import a Gear 360 photo or video to create a clip.", style="Muted.TLabel", wraplength=170).pack(anchor="w", padx=10, pady=(0, 12))
+
+        canvas_header = ttk.Frame(center, style="Panel.TFrame")
+        canvas_header.pack(fill="x", padx=12, pady=(10, 0))
+        ttk.Label(canvas_header, text="LIVE PREVIEW", style="Section.TLabel").pack(side="left")
+        ttk.Label(canvas_header, text="REFRAMED 16:9", style="Muted.TLabel").pack(side="right")
+        self.canvas = ttk.Label(center, text="Your reframed preview appears here", anchor="center", style="Muted.TLabel")
+        self.canvas.pack(fill="both", expand=True, padx=12, pady=(6, 12))
+        ttk.Separator(center, orient="horizontal").pack(fill="x", padx=12)
+        ttk.Label(center, text="Drag the dock dividers to customize your workspace.", style="Muted.TLabel").pack(anchor="w", padx=12, pady=9)
+
+        ttk.Label(inspector, text="REFRAME", style="Section.TLabel").pack(anchor="w", padx=12, pady=(12, 0))
+        for label, var, low, high in (("Yaw", self.yaw_var, -180, 180), ("Pitch", self.pitch_var, -85, 85), ("FOV", self.fov_var, 40, 120)):
+            row = ttk.Frame(inspector, style="Panel.TFrame")
+            row.pack(fill="x", padx=12, pady=(10, 0))
+            ttk.Label(row, text=label).pack(side="left")
+            value = ttk.Label(row, style="Value.TLabel", width=7, anchor="e")
+            value.pack(side="right")
+            var.trace_add("write", lambda *_args, target=value, source=var: target.config(text=f"{source.get():.0f} deg"))
+            ttk.Scale(inspector, from_=low, to=high, variable=var, command=self.schedule_preview).pack(fill="x", padx=12)
+        ttk.Button(inspector, text="Add keyframe", command=self.add_keyframe, style="Primary.TButton").pack(fill="x", padx=12, pady=16)
+        ttk.Separator(inspector, orient="horizontal").pack(fill="x", padx=12)
+        ttk.Label(inspector, text="EXPORT", style="Section.TLabel").pack(anchor="w", padx=12, pady=(14, 0))
+        ttk.Label(inspector, text="Preset", style="Muted.TLabel").pack(anchor="w", padx=12, pady=(8, 0))
+        ttk.Combobox(inspector, textvariable=self.preset_var, state="readonly",
+                     values=("Reframed 1080p", "Reframed 720p", "Full 360")).pack(fill="x", padx=12, pady=(3, 12))
+        ttk.Label(inspector, text="Advanced calibration is available from the source workflow.", style="Muted.TLabel", wraplength=180).pack(anchor="w", padx=12, pady=(10, 0))
+
+        timeline = ttk.LabelFrame(self, text="TIMELINE", style="Panel.TLabelframe")
+        timeline.pack(fill="x", padx=16, pady=(0, 16))
+        controls = ttk.Frame(timeline, style="Panel.TFrame")
+        controls.pack(fill="x", padx=10, pady=(9, 3))
+        ttk.Button(controls, text="Play", command=self.toggle_playback, style="Primary.TButton").pack(side="left")
+        ttk.Button(controls, text="Set In", command=lambda: self.set_trim(True), style="Tool.TButton").pack(side="left", padx=(8, 0))
+        ttk.Button(controls, text="Set Out", command=lambda: self.set_trim(False), style="Tool.TButton").pack(side="left")
+        ttk.Label(controls, text="Single-clip timeline", style="Muted.TLabel").pack(side="right")
+        self.timeline = ttk.Scale(timeline, from_=0, to=1, variable=self.time_var, command=self.schedule_preview, style="Timeline.Horizontal.TScale")
+        self.timeline.pack(fill="x", padx=14, pady=(3, 10))
+        self.keyframes_label = ttk.Label(timeline, text="No keyframes", style="Muted.TLabel")
+        self.keyframes_label.pack(anchor="e", padx=14, pady=(0, 8))
+
+    def import_media(self):
+        path = filedialog.askopenfilename(filetypes=[("Gear 360 media", "*.jpg *.jpeg *.mp4")])
+        if not path: return
+        self.history.snapshot()
+        kind = "video" if os.path.splitext(path)[1].lower() in VIDEO_EXTS else "photo"
+        self.history.project = EditorProject(media_path=path, media_kind=kind, export_preset=self.preset_var.get())
+        self.media_list.delete(0, "end"); self.media_list.insert("end", os.path.basename(path))
+        if kind == "video":
+            cap = cv2.VideoCapture(path); self.duration = cap.get(cv2.CAP_PROP_FRAME_COUNT) / max(cap.get(cv2.CAP_PROP_FPS), 1); cap.release()
+        else: self.duration = 0
+        self.trim_end_var.set(self.duration); self.timeline.config(to=max(self.duration, 1)); self.render()
+
+    def _source_frame(self):
+        project = self.history.project
+        if project.media_kind == "video":
+            cap = cv2.VideoCapture(project.media_path); cap.set(cv2.CAP_PROP_POS_MSEC, self.time_var.get() * 1000); ok, frame = cap.read(); cap.release()
+            return frame if ok else None
+        return cv2.imread(project.media_path, cv2.IMREAD_COLOR)
+
+    def schedule_preview(self, *_):
+        if self._preview_after_id: self.after_cancel(self._preview_after_id)
+        self._preview_after_id = self.after(80, self.render)
+
+    def render(self):
+        self._preview_after_id = None
+        frame = self._source_frame()
+        if frame is None: return
+        scale = min(1280 / frame.shape[1], 1); frame = cv2.resize(frame, (round(frame.shape[1]*scale), round(frame.shape[0]*scale))) if scale < 1 else frame
+        stitched = stitch_frame(frame, self.app.calibration)
+        view = reframe_equirect(stitched, self.yaw_var.get(), self.pitch_var.get(), self.fov_var.get(), out_w=720)
+        image = ImageTk.PhotoImage(Image.fromarray(cv2.cvtColor(view, cv2.COLOR_BGR2RGB)))
+        self.canvas.configure(image=image, text=""); self.canvas.image = image
+        self.status.configure(text=f"{os.path.basename(self.history.project.media_path)}  {self.time_var.get():.2f}s")
+
+    def add_keyframe(self):
+        self.history.snapshot(); project = self.history.project
+        project.keyframes = [keyframe for keyframe in project.keyframes if abs(keyframe.time_seconds - self.time_var.get()) > .01]
+        project.keyframes.append(ReframeKeyframe(self.time_var.get(), self.yaw_var.get(), self.pitch_var.get(), self.fov_var.get()))
+        project.keyframes.sort(); self.keyframes_label.config(text=f"{len(project.keyframes)} keyframe(s)")
+
+    def set_trim(self, is_start):
+        self.history.snapshot()
+        if is_start: self.history.project.trim_start = self.time_var.get()
+        else: self.history.project.trim_end = self.time_var.get()
+
+    def toggle_playback(self):
+        if not self.history.project.media_path or self.history.project.media_kind != "video": return
+        self.playing = not self.playing
+        if self.playing: self._play()
+
+    def _play(self):
+        if not self.playing: return
+        current = self.time_var.get() + 1 / 30
+        if current > self.history.project.trim_end: current = self.history.project.trim_start
+        self.time_var.set(current); view = self.history.project.view_at(current)
+        self.yaw_var.set(view.yaw_deg); self.pitch_var.set(view.pitch_deg); self.fov_var.set(view.fov_deg)
+        self.render(); self.after(33, self._play)
+
+    def step(self, direction):
+        self.time_var.set(max(0, min(self.duration, self.time_var.get() + direction / 30))); self.render()
+
+    def undo(self):
+        if self.history.undo(): self._restore_project()
+
+    def redo(self):
+        if self.history.redo(): self._restore_project()
+
+    def _restore_project(self):
+        project = self.history.project; self.preset_var.set(project.export_preset); self.time_var.set(project.trim_start); self.render()
+
+    def save_project(self):
+        path = filedialog.asksaveasfilename(defaultextension=".gear360project", filetypes=[("Gear 360 project", "*.gear360project")])
+        if path: self.history.project.export_preset = self.preset_var.get(); self.history.save(path)
+
+    def open_project(self):
+        path = filedialog.askopenfilename(filetypes=[("Gear 360 project", "*.gear360project")])
+        if not path: return
+        try: self.history.load(path)
+        except (OSError, ValueError, json.JSONDecodeError) as error: messagebox.showerror("Project error", str(error)); return
+        self.import_loaded_project()
+
+    def import_loaded_project(self):
+        project = self.history.project; self.media_list.delete(0, "end"); self.media_list.insert("end", os.path.basename(project.media_path))
+        self.import_media_metadata()
+
+    def import_media_metadata(self):
+        project = self.history.project
+        if project.media_kind == "video":
+            cap = cv2.VideoCapture(project.media_path); self.duration = cap.get(cv2.CAP_PROP_FRAME_COUNT) / max(cap.get(cv2.CAP_PROP_FPS), 1); cap.release()
+        self.timeline.config(to=max(self.duration, 1)); self.time_var.set(project.trim_start); self.render()
+
+    def export(self):
+        if not self.history.project.media_path:
+            messagebox.showwarning("No media", "Import media before exporting.")
+            return
+        messagebox.showinfo(
+            "Export settings",
+            f"{self.preset_var.get()} is selected.\n"
+            "Photo export remains available in the Calibration workspace; "
+            "timeline video rendering will be added next.",
+        )
 
 
 class BatchTab(ttk.Frame):
